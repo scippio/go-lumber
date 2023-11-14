@@ -210,25 +210,24 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 		mux:         mux,
 		done:        make(chan struct{}),
 	}
-	s.wg.Add(1)
-	go s.run()
+	// s.wg.Add(1)
 
 	return s, nil
 }
 
-func (s *server) run() {
-	defer s.wg.Done()
-	for {
-		client, err := s.netListener.Accept()
-		if err != nil {
-			break
-		}
+// func (s *server) run() {
+// 	defer s.wg.Done()
+// 	for {
+// 		client, err := s.netListener.Accept()
+// 		if err != nil {
+// 			break
+// 		}
 
-		s.handle(client)
-	}
-}
+// 		s.Handle(client)
+// 	}
+// }
 
-func (s *server) handle(client net.Conn) {
+func (s *server) Handle(client net.Conn) {
 	// read first byte and decide multiplexer
 
 	sig := make(chan struct{})
