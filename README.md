@@ -1,9 +1,9 @@
 # go-lumber
-[![ci](https://github.com/elastic/go-lumber/actions/workflows/ci.yml/badge.svg)](https://github.com/elastic/go-lumber/actions/workflows/ci.yml)
+[![ci](https://github.com/scippio/go-lumber/actions/workflows/ci.yml/badge.svg)](https://github.com/scippio/go-lumber/actions/workflows/ci.yml)
 [![Go Report
-Card](https://goreportcard.com/badge/github.com/elastic/go-lumber)](https://goreportcard.com/report/github.com/elastic/go-lumber)
-[![Contributors](https://img.shields.io/github/contributors/elastic/go-lumber.svg)](https://github.com/elastic/go-lumber/graphs/contributors)
-[![GitHub release](https://img.shields.io/github/release/elastic/go-lumber.svg?label=changelog)](https://github.com/elastic/go-lumber/releases/latest)
+Card](https://goreportcard.com/badge/github.com/scippio/go-lumber)](https://goreportcard.com/report/github.com/scippio/go-lumber)
+[![Contributors](https://img.shields.io/github/contributors/scippio/go-lumber.svg)](https://github.com/scippio/go-lumber/graphs/contributors)
+[![GitHub release](https://img.shields.io/github/release/scippio/go-lumber.svg?label=changelog)](https://github.com/scippio/go-lumber/releases/latest)
 
 Lumberjack protocol client and server implementations for go.
 
@@ -14,7 +14,7 @@ connections and log when it receives batches of events.
 
 ```
 # Install to $GOPATH/bin.
-go install github.com/elastic/go-lumber/cmd/tst-lj@latest
+go install github.com/scippio/go-lumber/cmd/tst-lj@latest
 
 # Start server.
 tst-lj -bind=localhost:5044 -v2

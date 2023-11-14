@@ -28,7 +28,7 @@ import (
 
 	"github.com/klauspost/compress/zlib"
 
-	protocol "github.com/elastic/go-lumber/protocol/v2"
+	protocol "github.com/scippio/go-lumber/protocol/v2"
 )
 
 // Client implements the low-level lumberjack wire protocol. SyncClient and

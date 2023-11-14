@@ -32,7 +32,7 @@ linters:
 
 linters-settings:
   goimports:
-    local-prefixes: github.com/elastic/go-lumber
+    local-prefixes: github.com/scippio/go-lumber
   gofumpt:
     extra-rules: true
   revive:

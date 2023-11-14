@@ -6,11 +6,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Add connection metadata to `lj.Batch`. [#29](https://github.com/elastic/go-lumber/pull/29)
+- Add connection metadata to `lj.Batch`. [#29](https://github.com/scippio/go-lumber/pull/29)
 
 ### Changed
 
-- Require Go 1.17 to use module. [#28](https://github.com/elastic/go-lumber/pull/28)
+- Require Go 1.17 to use module. [#28](https://github.com/scippio/go-lumber/pull/28)
 
 ### Deprecated
 
@@ -22,7 +22,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- Fix goroutine and file descriptor leak if an error occurs during connection startup. [#15](https://github.com/elastic/go-lumber/pull/15)
+- Fix goroutine and file descriptor leak if an error occurs during connection startup. [#15](https://github.com/scippio/go-lumber/pull/15)
 
-[Unreleased]: https://github.com/elastic/go-lumber/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/scippio/go-lumber/compare/v0.1.1...HEAD
 [0.1.1]: https://github.com/elastic/go-concert/compare/v0.1.0...v0.1.1

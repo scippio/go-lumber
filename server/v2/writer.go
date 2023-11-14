@@ -22,7 +22,7 @@ import (
 	"net"
 	"time"
 
-	protocol "github.com/elastic/go-lumber/protocol/v2"
+	protocol "github.com/scippio/go-lumber/protocol/v2"
 )
 
 type writer struct {

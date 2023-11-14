@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/elastic/go-lumber/lj"
-	"github.com/elastic/go-lumber/log"
+	"github.com/scippio/go-lumber/lj"
+	"github.com/scippio/go-lumber/log"
 )
 
 type defaultHandler struct {
