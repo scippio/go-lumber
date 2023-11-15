@@ -32,6 +32,7 @@ type defaultHandler struct {
 	reader    BatchReader
 	writer    ACKWriter
 	keepalive time.Duration
+	logging   bool
 
 	signal chan struct{}
 	ch     chan *lj.Batch
@@ -53,6 +54,7 @@ type ProtocolFactory func(conn net.Conn) (BatchReader, ACKWriter, error)
 func DefaultHandler(
 	keepalive time.Duration,
 	mk ProtocolFactory,
+	logging bool,
 ) HandlerFactory {
 	return func(cb Eventer, client net.Conn) (Handler, error) {
 		r, w, err := mk(client)
@@ -68,6 +70,7 @@ func DefaultHandler(
 			keepalive: keepalive,
 			signal:    make(chan struct{}),
 			ch:        make(chan *lj.Batch),
+			logging:   logging,
 		}, nil
 	}
 }
@@ -90,8 +93,10 @@ func (h *defaultHandler) Stop() {
 }
 
 func (h *defaultHandler) handle() error {
-	log.Printf("Start client handler")
-	defer log.Printf("client handler stopped")
+	if h.logging {
+		log.Printf("Start client handler")
+		defer log.Printf("client handler stopped")
+	}
 	defer close(h.ch)
 	defer h.Stop()
 
@@ -122,8 +127,10 @@ func (h *defaultHandler) handle() error {
 }
 
 func (h *defaultHandler) ackLoop() {
-	log.Println("start client ack loop")
-	defer log.Println("client ack loop stopped")
+	if h.logging {
+		log.Println("start client ack loop")
+		defer log.Println("client ack loop stopped")
+	}
 
 	// drain queue on shutdown.
 	// Stop ACKing batches in case of error, forcing client to reconnect
@@ -137,7 +144,9 @@ func (h *defaultHandler) ackLoop() {
 	for {
 		select {
 		case <-h.signal: // return on client/server shutdown
-			log.Println("receive client connection close signal")
+			if h.logging {
+				log.Println("receive client connection close signal")
+			}
 			return
 		case b, open := <-h.ch:
 			if !open {

@@ -39,6 +39,7 @@ type Config struct {
 	TLS     *tls.Config
 	Handler HandlerFactory
 	Channel chan *lj.Batch
+	Logging bool
 }
 
 type Handler interface {
@@ -83,8 +84,8 @@ func NewWithListener(l net.Listener, opts Config) (*Server, error) {
 		s.ch = make(chan *lj.Batch, 128)
 	}
 
-	s.sig.Add(1)
-	go s.run()
+	// s.sig.Add(1)
+	// go s.run()
 
 	return s, nil
 }
@@ -145,13 +146,17 @@ func (s *Server) run() {
 		if err != nil {
 			break
 		}
-
-		log.Printf("New connection from %v", client.RemoteAddr())
+		if s.opts.Logging {
+			log.Printf("New connection from %v", client.RemoteAddr())
+		}
 		s.startConnHandler(client)
 	}
 }
 
 func (s *Server) Handle(c net.Conn) {
+	if s.opts.Logging {
+		log.Printf("New connection from %v", c.RemoteAddr())
+	}
 	s.startConnHandler(c)
 }
 
@@ -178,7 +183,9 @@ func (s *Server) startConnHandler(client net.Conn) {
 
 	h, err := s.opts.Handler(newChanCallback(s.sig.Sig(), s.ch), client)
 	if err != nil {
-		log.Printf("Failed to initialize client handler: %v", h)
+		if s.opts.Logging {
+			log.Printf("Failed to initialize client handler: %v", h)
+		}
 		return
 	}
 

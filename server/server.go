@@ -119,7 +119,10 @@ func (s *server) Close() error {
 	for _, m := range s.mux {
 		m.server.Close()
 	}
-	err := s.netListener.Close()
+	var err error = nil
+	if s.netListener != nil {
+		err = s.netListener.Close()
+	}
 	s.wg.Wait()
 	if s.ownCH {
 		close(s.ch)
@@ -145,74 +148,7 @@ func (s *server) Receive() *lj.Batch {
 }
 
 func NewServer(opts ...Option) (Server, error) {
-	cfg, err := applyOptions(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var servers []func() (Server, byte, error)
-
-	log.Printf("Server config: %#v", cfg)
-
-	if cfg.v1 {
-		servers = append(servers, func() (Server, byte, error) {
-			s, err := v1.NewServer(
-				v1.Timeout(cfg.timeout),
-				v1.Channel(cfg.ch),
-				v1.TLS(cfg.tls))
-			return s, '1', err
-		})
-	}
-	if cfg.v2 {
-		servers = append(servers, func() (Server, byte, error) {
-			s, err := v2.NewServer(
-				v2.Keepalive(cfg.keepalive),
-				v2.Timeout(cfg.timeout),
-				v2.Channel(cfg.ch),
-				v2.TLS(cfg.tls),
-				v2.JSONDecoder(cfg.decoder))
-			return s, '2', err
-		})
-	}
-
-	if len(servers) == 0 {
-		return nil, ErrNoVersionEnabled
-	}
-	if len(servers) == 1 {
-		s, _, err := servers[0]()
-		return s, err
-	}
-
-	ownCH := false
-	if cfg.ch == nil {
-		ownCH = true
-		cfg.ch = make(chan *lj.Batch, 128)
-	}
-
-	mux := make([]muxServer, len(servers))
-	for i, mk := range servers {
-		muxL := newEmptyMuxListener()
-		log.Printf("mk: %v", i)
-		s, b, err := mk()
-		if err != nil {
-			return nil, err
-		}
-
-		mux[i] = muxServer{
-			mux:    b,
-			l:      muxL,
-			server: s,
-		}
-	}
-
-	s := &server{
-		ch:    cfg.ch,
-		ownCH: ownCH,
-		mux:   mux,
-		done:  make(chan struct{}),
-	}
-
-	return s, nil
+	return newServer(nil, opts...)
 }
 
 func newServer(l net.Listener, opts ...Option) (Server, error) {
@@ -223,14 +159,17 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 
 	var servers []func(net.Listener) (Server, byte, error)
 
-	log.Printf("Server config: %#v", cfg)
+	if cfg.logging {
+		log.Printf("Server config: %#v", cfg)
+	}
 
 	if cfg.v1 {
 		servers = append(servers, func(l net.Listener) (Server, byte, error) {
 			s, err := v1.NewWithListener(l,
 				v1.Timeout(cfg.timeout),
 				v1.Channel(cfg.ch),
-				v1.TLS(cfg.tls))
+				v1.TLS(cfg.tls),
+				v1.Logging(cfg.logging))
 			return s, '1', err
 		})
 	}
@@ -241,7 +180,8 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 				v2.Timeout(cfg.timeout),
 				v2.Channel(cfg.ch),
 				v2.TLS(cfg.tls),
-				v2.JSONDecoder(cfg.decoder))
+				v2.JSONDecoder(cfg.decoder),
+				v2.Logging(cfg.logging))
 			return s, '2', err
 		})
 	}
@@ -262,8 +202,10 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 
 	mux := make([]muxServer, len(servers))
 	for i, mk := range servers {
-		muxL := newMuxListener(l)
-		log.Printf("mk: %v", i)
+		muxL := newEmptyMuxListener()
+		if cfg.logging {
+			log.Printf("mk: %v", i)
+		}
 		s, b, err := mk(muxL)
 		if err != nil {
 			return nil, err
@@ -283,10 +225,17 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 		mux:         mux,
 		done:        make(chan struct{}),
 	}
-	s.wg.Add(1)
-	go s.run()
+	// s.wg.Add(1)
+	// go s.run()
 
 	return s, nil
+}
+
+func (s *server) Handle(c net.Conn) {
+	// if s.netListener != nil {
+	// c, _ = s.netListener.Accept()
+	// }
+	s.handle(c)
 }
 
 func (s *server) run() {
@@ -297,11 +246,11 @@ func (s *server) run() {
 			break
 		}
 
-		s.Handle(client)
+		s.handle(client)
 	}
 }
 
-func (s *server) Handle(client net.Conn) {
+func (s *server) handle(client net.Conn) {
 	// read first byte and decide multiplexer
 
 	sig := make(chan struct{})
@@ -322,6 +271,7 @@ func (s *server) Handle(client net.Conn) {
 
 			conn := newMuxConn(buf[0], client)
 			m.l.ch <- conn
+			m.server.Handle(conn)
 			return
 		}
 		client.Close()

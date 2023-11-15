@@ -32,6 +32,7 @@ type options struct {
 	timeout time.Duration
 	tls     *tls.Config
 	ch      chan *lj.Batch
+	logging bool
 }
 
 // Timeout configures server network timeouts.
@@ -59,6 +60,13 @@ func TLS(tls *tls.Config) Option {
 func Channel(c chan *lj.Batch) Option {
 	return func(opt *options) error {
 		opt.ch = c
+		return nil
+	}
+}
+
+func Logging(b bool) Option {
+	return func(opt *options) error {
+		opt.logging = b
 		return nil
 	}
 }

@@ -37,6 +37,7 @@ type options struct {
 	v1        bool
 	v2        bool
 	ch        chan *lj.Batch
+	logging   bool
 }
 
 type jsonDecoder func([]byte, interface{}) error
@@ -106,6 +107,13 @@ func V2(b bool) Option {
 	}
 }
 
+func Logging(b bool) Option {
+	return func(opt *options) error {
+		opt.logging = b
+		return nil
+	}
+}
+
 func applyOptions(opts []Option) (options, error) {
 	o := options{
 		decoder:   json.Unmarshal,
@@ -114,6 +122,7 @@ func applyOptions(opts []Option) (options, error) {
 		v1:        true,
 		v2:        true,
 		tls:       nil,
+		logging:   true,
 	}
 
 	for _, opt := range opts {

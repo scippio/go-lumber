@@ -35,6 +35,7 @@ type options struct {
 	decoder   jsonDecoder
 	tls       *tls.Config
 	ch        chan *lj.Batch
+	logging   bool
 }
 
 // Keepalive configures the keepalive interval returning an ACK of length 0 to
@@ -82,6 +83,13 @@ func TLS(tls *tls.Config) Option {
 func JSONDecoder(decoder func([]byte, interface{}) error) Option {
 	return func(opt *options) error {
 		opt.decoder = decoder
+		return nil
+	}
+}
+
+func Logging(b bool) Option {
+	return func(opt *options) error {
+		opt.logging = b
 		return nil
 	}
 }
