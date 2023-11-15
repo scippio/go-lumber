@@ -51,7 +51,7 @@ func main() {
 	detailed := flag.Bool("d", false, "detailed: print log message per event")
 	flag.Parse()
 
-	s, err := server.NewServer(nil, server.V1(*v1), server.V2(*v2))
+	s, err := server.NewServer(server.V1(*v1), server.V2(*v2))
 
 	// s, err := server.ListenAndServe(*bind,
 	// 	server.V1(*v1),

@@ -113,7 +113,10 @@ func ListenAndServe(addr string, opts Config) (*Server, error) {
 }
 
 func (s *Server) Close() error {
-	err := s.listener.Close()
+	var err error = nil
+	if s.listener != nil {
+		err = s.listener.Close()
+	}
 	s.sig.Close()
 	if s.ownCH {
 		close(s.ch)
@@ -128,10 +131,6 @@ func (s *Server) Receive() *lj.Batch {
 	case b := <-s.ch:
 		return b
 	}
-}
-
-func (s *Server) Handle(c net.Conn) {
-	s.startConnHandler(c)
 }
 
 func (s *Server) ReceiveChan() <-chan *lj.Batch {
@@ -150,6 +149,28 @@ func (s *Server) run() {
 		log.Printf("New connection from %v", client.RemoteAddr())
 		s.startConnHandler(client)
 	}
+}
+
+func (s *Server) Handle(c net.Conn) {
+	s.startConnHandler(c)
+}
+
+func NewServer(opts Config) (*Server, error) {
+	s := &Server{
+		sig:  makeCloseSignaler(),
+		ch:   opts.Channel,
+		opts: opts,
+	}
+
+	if s.ch == nil {
+		s.ownCH = true
+		s.ch = make(chan *lj.Batch, 128)
+	}
+
+	// s.sig.Add(1)
+	// go s.run()
+
+	return s, nil
 }
 
 func (s *Server) startConnHandler(client net.Conn) {

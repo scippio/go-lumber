@@ -83,6 +83,12 @@ func (s *Server) Handle(c net.Conn) {
 	s.s.Handle(c)
 }
 
+func NewServer(opts ...Option) (*Server, error) {
+	return newServer(opts, func(cfg internal.Config) (*internal.Server, error) {
+		return internal.NewServer(cfg)
+	})
+}
+
 func newServer(
 	opts []Option,
 	mk func(cfg internal.Config) (*internal.Server, error),
