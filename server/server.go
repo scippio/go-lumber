@@ -191,7 +191,7 @@ func NewServer(opts ...Option) (Server, error) {
 
 	mux := make([]muxServer, len(servers))
 	for i, mk := range servers {
-		// muxL := newMuxListener(l)
+		muxL := newEmptyMuxListener()
 		log.Printf("mk: %v", i)
 		s, b, err := mk()
 		if err != nil {
@@ -199,8 +199,8 @@ func NewServer(opts ...Option) (Server, error) {
 		}
 
 		mux[i] = muxServer{
-			mux: b,
-			// l:      muxL,
+			mux:    b,
+			l:      muxL,
 			server: s,
 		}
 	}

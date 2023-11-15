@@ -44,6 +44,10 @@ func newMuxListener(l net.Listener) *muxListener {
 	return &muxListener{l, make(chan net.Conn, 1)}
 }
 
+func newEmptyMuxListener() *muxListener {
+	return &muxListener{nil, make(chan net.Conn, 1)}
+}
+
 // Accept waits for and returns the next connection to the listener.
 func (l *muxListener) Accept() (net.Conn, error) {
 	conn, ok := <-l.ch
