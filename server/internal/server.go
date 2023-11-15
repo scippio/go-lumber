@@ -130,6 +130,10 @@ func (s *Server) Receive() *lj.Batch {
 	}
 }
 
+func (s *Server) Handle(c net.Conn) {
+	s.startConnHandler(c)
+}
+
 func (s *Server) ReceiveChan() <-chan *lj.Batch {
 	return s.ch
 }

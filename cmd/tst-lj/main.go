@@ -28,6 +28,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,12 +51,29 @@ func main() {
 	detailed := flag.Bool("d", false, "detailed: print log message per event")
 	flag.Parse()
 
-	s, err := server.ListenAndServe(*bind,
-		server.V1(*v1),
-		server.V2(*v2))
+	s, err := server.NewServer(nil, server.V1(*v1), server.V2(*v2))
+
+	// s, err := server.ListenAndServe(*bind,
+	// 	server.V1(*v1),
+	// 	server.V2(*v2))
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	l, err := net.Listen("tcp", *bind)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				break
+			}
+			s.Handle(c)
+		}
+	}()
 
 	log.Println("tcp server up")
 

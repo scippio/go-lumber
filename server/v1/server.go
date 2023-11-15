@@ -79,6 +79,10 @@ func (s *Server) Close() error {
 	return s.s.Close()
 }
 
+func (s *Server) Handle(c net.Conn) {
+	s.s.Handle(c)
+}
+
 func newServer(
 	opts []Option,
 	mk func(cfg internal.Config) (*internal.Server, error),

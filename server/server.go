@@ -18,7 +18,6 @@
 package server
 
 import (
-	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -43,6 +42,8 @@ type Server interface {
 	// Close stops the listener, closes all active connections and closes the
 	// receiver channel returned from ReceiveChan().
 	Close() error
+
+	Handle(conn net.Conn)
 }
 
 type server struct {
@@ -52,8 +53,8 @@ type server struct {
 	done chan struct{}
 	wg   sync.WaitGroup
 
-	netListener net.Listener
-	mux         []muxServer
+	// netListener net.Listener
+	mux []muxServer
 }
 
 type muxServer struct {
@@ -66,50 +67,6 @@ type muxServer struct {
 // when instantiating a server.
 var ErrNoVersionEnabled = errors.New("no protocol version enabled")
 
-// NewWithListener creates a new Server using an existing net.Listener. Use
-// options V1 and V2 to enable wanted protocol versions.
-func NewWithListener(l net.Listener, opts ...Option) (Server, error) {
-	return newServer(l, opts...)
-}
-
-// ListenAndServeWith uses binder to create a listener for establishing a lumberjack
-// endpoint.
-// Use options V1 and V2 to enable wanted protocol versions.
-func ListenAndServeWith(
-	binder func(network, addr string) (net.Listener, error),
-	addr string,
-	opts ...Option,
-) (Server, error) {
-	l, err := binder("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	s, err := NewWithListener(l, opts...)
-	if err != nil {
-		l.Close()
-	}
-	return s, err
-}
-
-// ListenAndServe listens on the TCP network address addr and handles batch
-// requests from accepted lumberjack clients.
-// Use options V1 and V2 to enable wanted protocol versions.
-func ListenAndServe(addr string, opts ...Option) (Server, error) {
-	o, err := applyOptions(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	binder := net.Listen
-	if o.tls != nil {
-		binder = func(network, addr string) (net.Listener, error) {
-			return tls.Listen(network, addr, o.tls)
-		}
-	}
-
-	return ListenAndServeWith(binder, addr, opts...)
-}
-
 // Close stops the listener, closes all active connections and closes the
 // receiver channel returned from ReceiveChan()
 func (s *server) Close() error {
@@ -117,12 +74,12 @@ func (s *server) Close() error {
 	for _, m := range s.mux {
 		m.server.Close()
 	}
-	err := s.netListener.Close()
+	// err := s.netListener.Close()
 	s.wg.Wait()
 	if s.ownCH {
 		close(s.ch)
 	}
-	return err
+	return nil
 }
 
 // ReceiveChan returns a channel all received batch requests will be made
@@ -142,29 +99,27 @@ func (s *server) Receive() *lj.Batch {
 	}
 }
 
-func newServer(l net.Listener, opts ...Option) (Server, error) {
+func NewServer(opts ...Option) (Server, error) {
 	cfg, err := applyOptions(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	var servers []func(net.Listener) (Server, byte, error)
+	var servers []func() (Server, byte, error)
 
 	log.Printf("Server config: %#v", cfg)
 
 	if cfg.v1 {
-		servers = append(servers, func(l net.Listener) (Server, byte, error) {
-			s, err := v1.NewWithListener(l,
-				v1.Timeout(cfg.timeout),
+		servers = append(servers, func() (Server, byte, error) {
+			s, err := v1.NewWithListener(nil,
 				v1.Channel(cfg.ch),
 				v1.TLS(cfg.tls))
 			return s, '1', err
 		})
 	}
 	if cfg.v2 {
-		servers = append(servers, func(l net.Listener) (Server, byte, error) {
-			s, err := v2.NewWithListener(l,
-				v2.Keepalive(cfg.keepalive),
+		servers = append(servers, func() (Server, byte, error) {
+			s, err := v2.NewWithListener(nil,
 				v2.Timeout(cfg.timeout),
 				v2.Channel(cfg.ch),
 				v2.TLS(cfg.tls),
@@ -177,7 +132,7 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 		return nil, ErrNoVersionEnabled
 	}
 	if len(servers) == 1 {
-		s, _, err := servers[0](l)
+		s, _, err := servers[0]()
 		return s, err
 	}
 
@@ -189,26 +144,26 @@ func newServer(l net.Listener, opts ...Option) (Server, error) {
 
 	mux := make([]muxServer, len(servers))
 	for i, mk := range servers {
-		muxL := newMuxListener(l)
+		// muxL := newMuxListener()
 		log.Printf("mk: %v", i)
-		s, b, err := mk(muxL)
+		s, b, err := mk()
 		if err != nil {
 			return nil, err
 		}
 
 		mux[i] = muxServer{
-			mux:    b,
-			l:      muxL,
+			mux: b,
+			// l:      muxL,
 			server: s,
 		}
 	}
 
 	s := &server{
-		ch:          cfg.ch,
-		ownCH:       ownCH,
-		netListener: l,
-		mux:         mux,
-		done:        make(chan struct{}),
+		ch:    cfg.ch,
+		ownCH: ownCH,
+		// netListener: l,
+		mux:  mux,
+		done: make(chan struct{}),
 	}
 	// s.wg.Add(1)
 
